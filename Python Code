@@ -1,0 +1,130 @@
+from graphics import Canvas
+import random
+import time
+import math
+
+CANVAS_WIDTH = 400
+CANVAS_HEIGHT = 400
+
+def main():
+    print("Plant as many flowers as you can within 60 secs! Mushrooms will appear randomly.")
+    print("But if you destroy a mushroom (by clicking on it), you'll lose a life.")
+    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    score = 0
+    lives = 3
+    time_limit = 60  # seconds
+    start_time = time.time()
+
+    score_text = canvas.create_text(10, 10, text=f"Score: {score}", anchor="nw")
+    lives_text = canvas.create_text(10, 30, text=f"Lives: {lives}", anchor="nw")
+    countdown_text = canvas.create_text(10,50, text=f"Time: {time_limit}", anchor="nw")
+
+    character = canvas.create_oval(195, 195, 205, 205, color='blue')
+
+    mushrooms = [draw_mushroom(canvas, random.randint(50, CANVAS_WIDTH - 50), random.randint(50, CANVAS_HEIGHT - 50)) for _ in range(5)]
+
+    while lives > 0:
+
+        elapsed = int(time.time() - start_time)
+        time_remaining = max(0, time_limit - elapsed)
+        canvas.change_text(countdown_text, new_text=f"Time: {time_remaining}")
+
+        if time_remaining == 0:
+            canvas.create_text(CANVAS_WIDTH // 2, CANVAS_HEIGHT // 2, text="Time's up!", font="Helvetica 24 bold")
+            break  
+
+        canvas.wait_for_click() 
+
+        clicks = canvas.get_new_mouse_clicks()
+        if clicks:
+            click_x, click_y = clicks[0]
+
+    
+        canvas.move(character, click_x - canvas.get_left_x(character), click_y - canvas.get_top_y(character))
+
+      
+        for mushroom in mushrooms[:]:
+            if check_collision(canvas, character, mushroom):
+                print("Collision with mushroom!")
+                lives -= 1
+                canvas.change_text(lives_text, new_text=f"Lives: {lives}")
+                canvas.delete(mushroom[0])  
+                canvas.delete(mushroom[1])  
+                mushrooms.remove(mushroom)  
+
+        
+        for mushroom in mushrooms:
+            canvas.delete(mushroom[0])
+            canvas.delete(mushroom[1])
+        mushrooms.clear()
+
+        
+        mushrooms = [
+            draw_mushroom(canvas, random.randint(50, CANVAS_WIDTH - 50), random.randint(50, CANVAS_HEIGHT - 50))
+            for _ in range(5)
+        ]
+
+        
+        draw_flower(canvas, click_x, click_y)
+        score += 1 
+        canvas.change_text(score_text, new_text=f"Score: {score}")
+
+    if lives <= 0:
+        canvas.create_text(CANVAS_WIDTH // 2, CANVAS_HEIGHT // 2, text="Game Over!", font="Helvetica 24 bold")
+        
+
+    time.sleep(0.05)  
+    
+
+
+def draw_mushroom(canvas, x, y):
+    cap = canvas.create_oval(x - 10, y - 20, x + 10, y, color='red')  
+    stem = canvas.create_rectangle(x - 5, y, x + 5, y + 20, color='antiquewhite')  
+    return (cap, stem)  
+
+def check_collision(canvas, character, mushroom):
+    char_left_x = canvas.get_left_x(character)
+    char_top_y = canvas.get_top_y(character)
+    char_right_x = char_left_x + 10  
+    char_bottom_y = char_top_y + 10  
+
+    
+    mushroom_cap = mushroom[0]  
+    mushroom_left_x = canvas.get_left_x(mushroom_cap)
+    mushroom_top_y = canvas.get_top_y(mushroom_cap)
+    mushroom_right_x = mushroom_left_x + 20 
+    mushroom_bottom_y = mushroom_top_y + 20  
+
+    
+    if (char_right_x > mushroom_left_x and char_left_x < mushroom_right_x and
+        char_bottom_y > mushroom_top_y and char_top_y < mushroom_bottom_y):
+        return True
+    return False
+
+def random_color():
+    colors = ['sandybrown', 'purple', 'tomato', 'lightblue', 'teal', 'mistyrose', 'chocolate']
+    return random.choice(colors)
+
+def draw_flower(canvas, x, y):
+  
+    center = canvas.create_oval(x-5, y-5, x+5, y+5, random_color())
+
+    
+    petals = []
+    petals.append(canvas.create_oval(x-15, y-5, x-5, y+5, color='pink'))
+    petals.append(canvas.create_oval(x+5, y-5, x+15, y+5, color='pink'))
+    petals.append(canvas.create_oval(x-5, y-15, x+5, y-5, color='pink'))
+    petals.append(canvas.create_oval(x-5, y+5, x+5, y+15, color='pink'))
+
+def countdown_timer(seconds):
+    while seconds:
+        mins, secs = divmod(seconds, 60)
+        time_format = f'{mins:02d}:{secs:02d}'
+        print(time_format, end='\r')  # \r overwrites the same line
+        time.sleep(1)
+        seconds -= 1
+    print("Time's up!")
+
+if __name__ == '__main__':
+    main()
